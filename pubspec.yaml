@@ -1,0 +1,15 @@
+name: mailtm_api
+description: wrapper for the mail.tm api.
+version: 1.0.0
+repository: https://github.com/furkanbora239/mailtm_api
+
+environment:
+  sdk: ^3.6.1
+
+# Add regular dependencies here.
+dependencies:
+  http: ^1.2.2
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.24.0
