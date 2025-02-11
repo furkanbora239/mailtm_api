@@ -1,90 +1,134 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+class _MyHttpClient {
+  final http.Client _client = http.Client();
+
+  Future<Map<String, dynamic>> request(String url, String method,
+      {Map<String, dynamic>? body, String? token}) async {
+    final headers = {"content-type": "application/json"};
+    if (token != null) {
+      headers["Authorization"] = "Bearer $token";
+    }
+
+    http.Response response;
+
+    if (method == 'get') {
+      response = await _client.get(Uri.parse(url), headers: headers);
+    } else if (method == 'post') {
+      response = await _client.post(Uri.parse(url),
+          body: json.encode(body), headers: headers);
+    } else {
+      throw Exception('Invalid HTTP method');
+    }
+
+    _chackStatusError(response);
+    return json.decode(response.body);
+  }
+
+  void close() {
+    _client.close();
+  }
+}
+
+void _chackStatusError(http.Response response) {
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw Exception(
+        'HTTP Error: ${response.statusCode}, Body: ${response.body}');
+  }
+}
+
 class TempMail {
   ///api base url
   static const String baseUrl = "https://api.mail.tm";
 
-  ///If params ara null its create random [Mail]. Most of my case random is batter.
+  ///If params are null it creates a random [Mail]. Most of the time random is better.
   static Future<Mail> createMail(
       {String? adressName, String? adressPassword}) async {
-    ///gets basic domain informations
-    final http.Response domains = await http.get(Uri.parse('$baseUrl/domains'));
-    final Map domainsMap = await json.decode(domains.body);
+    final client = _MyHttpClient();
 
-    //createing mail, useing adress name and password
-    final String adress =
-        "${adressName ?? DateTime.now().microsecondsSinceEpoch.toRadixString(32)}@${domainsMap["hydra:member"][0]["domain"]}";
-    final String password =
-        '${adressPassword ?? DateTime.now().microsecondsSinceEpoch.toRadixString(16)}fb';
-    final http.Response accaunt = await http.post(
-        Uri.parse('$baseUrl/accounts'),
-        body: json.encode({"address": adress, "password": password}),
-        headers: {"content-type": "application/json"});
-    final Map accauntMap = jsonDecode(accaunt.body);
+    try {
+      final domainsMap = await client.request('$baseUrl/domains', 'get');
 
-    //gets token for auth
-    final http.Response token = await http.post(Uri.parse("$baseUrl/token"),
-        body: json.encode({"address": adress, "password": password}),
-        headers: {"content-type": "application/json"});
-    final tokenMap = json.decode(token.body);
+      final String adress =
+          "${adressName ?? DateTime.now().microsecondsSinceEpoch.toRadixString(32)}@${domainsMap["hydra:member"][0]["domain"]}";
+      final String password =
+          '${adressPassword ?? DateTime.now().microsecondsSinceEpoch.toRadixString(16)}fb';
 
-    return Mail(
-        adress: adress,
-        password: password,
-        id: accauntMap["id"],
-        token: tokenMap["token"],
-        info: Info(
-            quota: accauntMap["quota"],
-            used: accauntMap["used"],
-            isDisabled: accauntMap["isDisabled"],
-            isDeleted: accauntMap["isDeleted"],
-            createdAt: DateTime.parse(accauntMap["createdAt"]),
-            updateAt: accauntMap["updateAt"] == null
-                ? null
-                : DateTime.parse(accauntMap["updateAt"])));
+      final accountMap = await client.request('$baseUrl/accounts', 'post',
+          body: {"address": adress, "password": password});
+
+      final tokenMap = await client.request("$baseUrl/token", 'post',
+          body: {"address": adress, "password": password});
+
+      return Mail(
+          adress: adress,
+          password: password,
+          id: accountMap["id"],
+          token: tokenMap["token"],
+          info: Info(
+              quota: accountMap["quota"],
+              used: accountMap["used"],
+              isDisabled: accountMap["isDisabled"],
+              isDeleted: accountMap["isDeleted"],
+              createdAt: DateTime.parse(accountMap["createdAt"]),
+              updateAt: accountMap["updateAt"] == null
+                  ? null
+                  : DateTime.parse(accountMap["updateAt"])));
+    } finally {
+      client.close();
+    }
   }
 
   ///[updateInfo] updates info.
-  updateInfo({required Mail mail}) async {
-    //gets basic info like quota
-    final http.Response info = await http.get(Uri.parse("$baseUrl/me"),
-        headers: {
-          "Authorization": "Bearer ${mail.token}",
-          "content-type": "application/json"
-        });
-    Map infoMap = jsonDecode(info.body);
-    return mail.info = Info(
-        quota: infoMap["quota"],
-        used: infoMap["used"],
-        isDisabled: infoMap["isDisabled"],
-        isDeleted: infoMap["isDeleted"],
-        createdAt: DateTime.parse(infoMap["createdAt"]),
-        updateAt: infoMap["updateAt"] == null
-            ? null
-            : DateTime.parse(infoMap["updateAt"]));
-  }
+  static Future<Info> updateInfo({required Mail mail}) async {
+    final client = _MyHttpClient();
+    try {
+      final infoMap =
+          await client.request("$baseUrl/me", 'get', token: mail.token);
 
-  /// [checkInBox] chaks provided mail inbox and return in mail class.
-  /// so if you have something in yor inbox you can see it in [mail.inBox]
-  /// if yout inbox is emty [mail.inBox] is return null
-  static Future<Mail> checkInBox({required Mail mail}) async {
-    final http.Response response = await http
-        .get(Uri.parse("$baseUrl/messages"), headers: {
-      "Authorization": "Bearer ${mail.token}",
-      "Content-Type": "application/json"
-    });
-    Map responseBodyMap = await json.decode(response.body);
-    if (responseBodyMap["hydra:totalItems"] == 0) {
-      mail.inBox = null;
-      return mail;
+      return mail.info = Info(
+          quota: infoMap["quota"],
+          used: infoMap["used"],
+          isDisabled: infoMap["isDisabled"],
+          isDeleted: infoMap["isDeleted"],
+          createdAt: DateTime.parse(infoMap["createdAt"]),
+          updateAt: infoMap["updateAt"] == null
+              ? null
+              : DateTime.parse(infoMap["updateAt"]));
+    } finally {
+      client.close();
     }
-
-    final List? inBox = responseBodyMap['hydra:member'];
-
-    mail.inBox = inBox;
-    return mail;
   }
+
+  /// [checkInBox] checks provided mail inbox and return in mail class.
+  /// so if you have something in your inbox you can see it in [mail.inBox]
+  /// if your inbox is empty [mail.inBox] returns null
+  static Future<Mail> checkInBox({required Mail mail}) async {
+    final client = _MyHttpClient();
+    try {
+      final responseBodyMap =
+          await client.request("$baseUrl/messages", 'get', token: mail.token);
+
+      if (responseBodyMap["hydra:totalItems"] == 0) {
+        mail.inBox = null;
+        return mail;
+      }
+
+      final List? inBox = responseBodyMap['hydra:member'];
+      mail.inBox = inBox;
+      return mail;
+    } finally {
+      client.close();
+    }
+  }
+}
+
+/// [_waitFunction] can be used with await to create an effect similar to sleep in other programming languages.
+/// It can be used to wait in asynchronous operations.
+/// However, due to its asynchronous nature, it will not work in non-asynchronous contexts.
+Future<void> _waitFunction({required Duration duration}) async {
+  await Future.delayed(duration);
 }
 
 class Mail {
