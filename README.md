@@ -9,10 +9,11 @@ At the moment it only supports two main features, because I didn't need the rest
 
 1- Mail creation
 2- Check inbox
+3- Quota control
 
 ## Features
 
-For now, I have only written as much as I need, but in order not to be incomplete, I will support other features provided by the API, such as delete, update, quota control.
+For now, I have only written as much as I need, but in order not to be incomplete, I will support other features provided by the API, such as delete, update.
 
 ## Usage
 
