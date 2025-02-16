@@ -98,6 +98,7 @@ _printErr(Object? object) {
 
 class TempMail {
   TempMail({bool printError = false, bool slowRequests = true}) {
+    ///[_printError] its on the name. print error logs to console.
     _printError = printError;
     _slowRequests = slowRequests;
   }
