@@ -1,8 +1,8 @@
-### This package is a wrapper for the mail.tm API.
+### This package is a wrapper for the [mail.tm](https://mail.tm/en/) API.
 
 Since the Dart package recommended on the website is not suitable for my conditions, I wrote my own.
 
-I strongly recommend that you read the mail.tm API terms and conditions before using this package. 
+I strongly recommend that you read the [mail.tm](https://mail.tm/en/) API terms and conditions before using this package. 
 The mail.tm API is for personal use only. Reselling is prohibited by the API terms.
 
 At the moment, it only supports three main features, because I didn't need the rest of the features:

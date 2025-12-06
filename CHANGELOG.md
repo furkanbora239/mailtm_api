@@ -1,3 +1,6 @@
+## 1.2.2
+- Hyperlinked mail.tm reference in README.
+
 ## 1.2.1
 - [dependencies] Updated http ^1.2.2 package to ^1.6.0.
 
