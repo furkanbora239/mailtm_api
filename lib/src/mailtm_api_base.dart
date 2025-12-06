@@ -90,7 +90,7 @@ void _checkStatusError(http.Response response) {
 }
 
 /// Prints error messages if _printError is true.
-_printErr(Object? object) {
+void _printErr(Object? object) {
   if (_printError) {
     print("\x1B[31m$object\x1B[0m");
   }

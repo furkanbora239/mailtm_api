@@ -1,3 +1,6 @@
+## 1.2.1
+- [dependencies] Updated http ^1.2.2 package to ^1.6.0.
+
 ## 1.2.0
 - Added configuration options for error printing and request timing.
 - Improved error handling and retry logic.

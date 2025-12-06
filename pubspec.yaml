@@ -1,6 +1,6 @@
 name: mailtm_api
 description: This package makes creating mail or temporary mail easier than ever. The mail.tm API wrapper is easy to use.
-version: 1.2.0
+version: 1.2.1
 repository: https://github.com/furkanbora239/mailtm_api
 
 environment:
@@ -8,8 +8,8 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
-  http: ^1.2.2
+  http: ^1.6.0
 
 dev_dependencies:
-  lints: ^5.0.0
+  lints: ^6.0.0
   test: ^1.24.0
